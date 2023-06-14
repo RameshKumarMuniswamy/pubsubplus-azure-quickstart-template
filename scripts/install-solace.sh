@@ -351,6 +351,8 @@ docker create \
   --env "service_webtransport_port=8008" \
   --env "service_webtransport_tlsport=1443" \
   --env "service_semp_tlsport=1943" \
+  --env "service_mqtt_port=1883" \
+  --env "service_mqtt_tlsport=8883" \
   --env "system_scaling_maxconnectioncount=${max_connections}" \
   --env "system_scaling_maxqueuemessagecount=${max_queue_messages}" \
   ${logging_config} \
