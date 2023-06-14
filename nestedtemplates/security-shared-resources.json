@@ -240,6 +240,19 @@
               "sourcePortRange": "*",
               "destinationAddressPrefix": "*"
             }
+          },
+          {
+            "name": "mqtttls",
+            "properties": {
+              "priority": 213,
+              "sourceAddressPrefix": "*",
+              "protocol": "Tcp",
+              "destinationPortRange": "8883",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*"
+            }
           }
         ]
       }
