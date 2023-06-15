@@ -51,7 +51,7 @@
         "Canada Central"
       ]
     },
-    "vmAndLoadbalancerExposure": {
+    "vmExposure": {
       "type": "string",
       "defaultValue": "Public",
       "metadata": {
@@ -61,13 +61,6 @@
         "Internal",
         "Public"
       ]
-    },
-    "dnsLabelForPublicLoadBalancer": {
-      "type": "string",
-      "defaultValue": "[concat('lb', uniqueString(resourceGroup().id, deployment().name))]",
-      "metadata": {
-        "description": "Ignored if Local exposure selected. If using a Public access, provide a unique DNS Label for the Load Balancer access IP. Name must satisfy regular expression ^[a-z][a-z0-9-]{1,61}[a-z0-9]$. Default will generate a unique string"
-      }
     },
     "dnsLabelForVmIp": {
       "type": "string",
@@ -169,7 +162,6 @@
         "description": "Deploy three node HA cluster or single node"
       },
       "allowedValues": [
-        "HighAvailability",
         "SingleNode"
       ]
     },
@@ -240,9 +232,6 @@
     "solaceSecurityTemplateName": "SolaceSecurity.Template",
     "securitySharedTemplateName": "security-shared-resources.json",
     "securitySharedTemplateUri": "[uri(parameters('_artifactsLocation'), concat(variables('nestedTemplatesLocation'), variables('securitySharedTemplateName'), parameters('_artifactsLocationSasToken')))]",
-    "solaceLoadBalancerName": "SolaceLoadBalancer.Template",
-    "loadBalancerSharedTemplateName": "loadbalancer-shared-resources.json",
-    "loadBalancerSharedTemplateUri": "[uri(parameters('_artifactsLocation'), concat(variables('nestedTemplatesLocation'), variables('loadBalancerSharedTemplateName'), parameters('_artifactsLocationSasToken')))]",
     "solaceUpdateSubnetName": "SolaceUpdateSubnet.Template",
     "updateSubnetSharedTemplateName": "update-subnet-shared-resources.json",
     "updateSubnetSharedTemplateUri": "[uri(parameters('_artifactsLocation'), concat(variables('nestedTemplatesLocation'), variables('updateSubnetSharedTemplateName'), parameters('_artifactsLocationSasToken')))]",
@@ -252,21 +241,15 @@
     "sempQueryScriptName": "semp_query.sh",
     "sempQueryScriptFileUri": "[uri(parameters('_artifactsLocation'), concat(variables('scriptsLocation'), variables('sempQueryScriptName'), parameters('_artifactsLocationSasToken')))]",
     "publicIPAddressNameVM": "myVMPublicIPD",
-    "publicIPAddressNameLB": "myLBPublicIPD",
     "publicIPAddressType": "Dynamic",
     "virtualNetworkName": "[if(not(empty(parameters('existingVirtualNetworkName'))), parameters('existingVirtualNetworkName'), 'solace-vnet')]",
     "subnetName": "[if(not(empty(parameters('existingSubnetName'))), parameters('existingSubnetName'), 'solace-subnet')]",
     "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
     "nicName": "Nicd",
     "numberOfNodes": {
-      "HighAvailability": 3,
       "SingleNode": 1
     },
     "numberOfInstances": "[variables('numberOfNodes')[parameters('deploymentModel')]]",
-    "monitorNodeIndex": 2,
-    "lbName" : "solace-ha-group-loadbalancer",
-    "lbPoolName": "solace-ha-group",
-    "lbPoolID": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', variables('lbName'), variables('lbPoolName'))]",
     "dataDisksChoices": {
       "0": [
         {
@@ -407,7 +390,7 @@
       }
     },
     {
-      "condition": "[equals(parameters('vmAndLoadbalancerExposure'),'Public')]",
+      "condition": "[equals(parameters('vmExposure'),'Public')]",
       "apiVersion": "2021-05-01",
       "type": "Microsoft.Network/publicIPAddresses",
       "name": "[concat(variables('publicIPAddressNameVM'), copyindex())]",
@@ -478,7 +461,7 @@
       }
     },
     {
-      "condition": "[equals(parameters('vmAndLoadbalancerExposure'),'Public')]",
+      "condition": "[equals(parameters('vmExposure'),'Public')]",
       "comments": "Only created if network interfaces are to be publicly exposed. Otherwise the next resource is created.",
       "apiVersion": "2021-05-01",
       "type": "Microsoft.Network/networkInterfaces",
@@ -490,8 +473,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses/', concat(variables('publicIPAddressNameVM'), copyindex()))]",
-        "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
-        "[resourceId('Microsoft.Resources/deployments/', variables('solaceLoadBalancerName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
       ],
       "properties": {
         "networkSecurityGroup": {
@@ -507,19 +489,14 @@
               },
               "subnet": {
                 "id": "[variables('subnetRef')]"
-              },
-              "loadBalancerBackendAddressPools": [
-                {
-                  "id": "[variables('lbPoolID')]"
-                }
-              ]
+              }
             }
           }
         ]
       }
     },
     {
-      "condition": "[not(equals(parameters('vmAndLoadbalancerExposure'),'Public'))]",
+      "condition": "[not(equals(parameters('vmExposure'),'Public'))]",
       "apiVersion": "2021-05-01",
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[concat('Internal',variables('nicName'), copyindex())]",
@@ -529,8 +506,7 @@
         "count": "[variables('numberOfInstances')]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
-        "[resourceId('Microsoft.Resources/deployments/', variables('solaceLoadBalancerName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
       ],
       "properties": {
         "networkSecurityGroup": {
@@ -543,12 +519,7 @@
               "privateIPAllocationMethod": "Dynamic",
               "subnet": {
                 "id": "[variables('subnetRef')]"
-              },
-              "loadBalancerBackendAddressPools": [
-                {
-                  "id": "[variables('lbPoolID')]"
-                }
-              ]
+              }
             }
           }
         ]
@@ -577,7 +548,7 @@
         "count": "[variables('numberOfInstances')]"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Network/networkInterfaces/', concat(parameters('vmAndLoadbalancerExposure'),variables('nicName'), copyindex()))]",
+        "[resourceId('Microsoft.Network/networkInterfaces/', concat(parameters('vmExposure'),variables('nicName'), copyindex()))]",
         "[resourceId('Microsoft.Compute/availabilitySets/', variables('availabilitySetName'))]"
       ],
       "properties": {
