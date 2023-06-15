@@ -295,6 +295,25 @@
             }
           },
           {
+            "name": "mqtttls",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID')]"
+              },
+              "backendAddressPool": {
+                "id": "[variables('lbPoolID')]"
+              },
+              "protocol": "Tcp",
+              "frontendPort": 8883,
+              "backendPort": 8883,
+              "idleTimeoutInMinutes": 5,
+              "enableFloatingIP": false,
+              "probe": {
+                "id": "[variables('lbProbeID')]"
+              }
+            }
+          },
+          {
             "name": "mqttweb",
             "properties": {
               "frontendIPConfiguration": {
