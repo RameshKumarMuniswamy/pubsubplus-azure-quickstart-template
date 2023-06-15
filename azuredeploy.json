@@ -250,6 +250,7 @@
       "SingleNode": 1
     },
     "numberOfInstances": "[variables('numberOfNodes')[parameters('deploymentModel')]]",
+    "monitorNodeIndex": 2,
     "dataDisksChoices": {
       "0": [
         {
